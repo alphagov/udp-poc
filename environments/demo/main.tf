@@ -58,10 +58,10 @@ module "app_layer" {
 }
 
 module "companion_reader" {
-  source       = "../../modules/companion"
-  bucket_name  = module.core.s3_bucket_name
-  product_name = "app_settings"
-  database_name = "app_settings_dp"
+  source         = "../../modules/companion"
+  bucket_name    = module.core.s3_bucket_name
+  product_name   = "app_settings"
+  database_name  = "app_settings_dp"
   workgroup_name = module.core.athena_workgroup_name
 }
 

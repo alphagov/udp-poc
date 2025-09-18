@@ -40,20 +40,20 @@ resource "aws_iam_role" "lambda_role" {
 
 data "aws_iam_policy_document" "lambda_policy" {
   statement {
-    sid     = "AthenaAccess"
-    actions = ["athena:StartQueryExecution", "athena:GetQueryExecution", "athena:GetQueryResults"]
+    sid       = "AthenaAccess"
+    actions   = ["athena:StartQueryExecution", "athena:GetQueryExecution", "athena:GetQueryResults"]
     resources = ["*"]
   }
 
   statement {
-    sid     = "GlueCatalogRead"
-    actions = ["glue:GetDatabase", "glue:GetDatabases", "glue:GetTable", "glue:GetTables"]
+    sid       = "GlueCatalogRead"
+    actions   = ["glue:GetDatabase", "glue:GetDatabases", "glue:GetTable", "glue:GetTables"]
     resources = ["*"]
   }
 
   statement {
-    sid     = "LakeFormationDataAccess"
-    actions = ["lakeformation:GetDataAccess"]
+    sid       = "LakeFormationDataAccess"
+    actions   = ["lakeformation:GetDataAccess"]
     resources = ["*"]
   }
 
@@ -110,9 +110,9 @@ resource "aws_lambda_function" "companion" {
 
   environment {
     variables = {
-      BUCKET_NAME  = var.bucket_name
-      PRODUCT_NAME = var.product_name
-      DATABASE_NAME = var.database_name
+      BUCKET_NAME    = var.bucket_name
+      PRODUCT_NAME   = var.product_name
+      DATABASE_NAME  = var.database_name
       WORKGROUP_NAME = var.workgroup_name
     }
   }

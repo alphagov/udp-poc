@@ -120,11 +120,11 @@ data "archive_file" "lambda_zip" {
 }
 
 resource "aws_lambda_function" "handler" {
-  function_name = local.lambda_name
-  role          = aws_iam_role.lambda_role.arn
-  runtime       = "nodejs20.x"
-  handler       = "index.handler"
-  filename      = data.archive_file.lambda_zip.output_path
+  function_name    = local.lambda_name
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "nodejs20.x"
+  handler          = "index.handler"
+  filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.lambda_zip.output_path)
 
   environment { variables = { TABLE_NAME = aws_dynamodb_table.app_settings.name } }
@@ -197,11 +197,11 @@ data "archive_file" "ingest_zip" {
 }
 
 resource "aws_lambda_function" "ingest" {
-  function_name = "udp-app-settings-stream-ingest"
-  role          = aws_iam_role.ingest_role.arn
-  runtime       = "nodejs20.x"
-  handler       = "index.handler"
-  filename      = data.archive_file.ingest_zip.output_path
+  function_name    = "udp-app-settings-stream-ingest"
+  role             = aws_iam_role.ingest_role.arn
+  runtime          = "nodejs20.x"
+  handler          = "index.handler"
+  filename         = data.archive_file.ingest_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.ingest_zip.output_path)
 
   environment {
