@@ -1,0 +1,10 @@
+{
+  "name": "udp-app-settings-ingest",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.637.0"
+  }
+}
+
+
