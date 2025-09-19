@@ -1,8 +1,0 @@
-{
-  "name": "udp-companion-reader",
-  "version": "1.0.0",
-  "type": "commonjs",
-  "dependencies": {
-    "@aws-sdk/client-athena": "^3.637.0"
-  }
-}

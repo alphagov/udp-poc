@@ -18,68 +18,65 @@ provider "aws" {
 }
 
 module "core" {
-  source                = "../../modules/core"
-  region                = "eu-west-2"
-  bucket_name_prefix    = "udp-data-lake"
+  source                = "../../modules/core_simple"
   athena_workgroup_name = "udp-demo-workgroup"
 }
 
 module "app_settings" {
-  source                = "../../modules/data_product"
-  product_name          = "app_settings"
-  bucket_name           = module.core.s3_bucket_name
+  source                = "../../modules/domain"
+  domain_name           = "app_settings"
   lf_tag_domain_key     = module.core.lf_tag_domain_key
   lf_tag_pii_key        = module.core.lf_tag_pii_key
   glue_crawler_role_arn = module.core.glue_crawler_role_arn
 }
 
 module "notifications" {
-  source                = "../../modules/data_product"
-  product_name          = "notifications"
-  bucket_name           = module.core.s3_bucket_name
+  source                = "../../modules/domain"
+  domain_name           = "notifications"
   lf_tag_domain_key     = module.core.lf_tag_domain_key
   lf_tag_pii_key        = module.core.lf_tag_pii_key
   glue_crawler_role_arn = module.core.glue_crawler_role_arn
 }
 
+# module "companion" {
+#   source               = "../../modules/consumer_access"
+#   consumer_role_arn    = module.core.data_consumer_role_arn
+#   lf_tag_domain_key    = module.core.lf_tag_domain_key
+#   lf_tag_pii_key       = module.core.lf_tag_pii_key
+#   allowed_domains      = ["app_settings", "notifications"]
+#   allow_non_pii_tables = true
+# }
+
 module "companion" {
-  source               = "../../modules/consumer_access"
-  consumer_role_arn    = module.core.data_consumer_role_arn
+  source                = "../../modules/domain"
+  domain_name           = "companion"
+  lf_tag_domain_key     = module.core.lf_tag_domain_key
+  lf_tag_pii_key        = module.core.lf_tag_pii_key
+  glue_crawler_role_arn = module.core.glue_crawler_role_arn
+}
+
+# Grant Companion access to App Settings domain (authorized cross-domain access)
+module "companion_to_app_settings" {
+  source               = "../../modules/cross_domain_access"
+  consumer_role_arn    = module.companion.domain_role_arn
+  source_domain        = "app_settings"
+  target_domain        = "companion"
+  source_database_name = module.app_settings.database_name
+  source_table_name    = module.app_settings.table_name
   lf_tag_domain_key    = module.core.lf_tag_domain_key
   lf_tag_pii_key       = module.core.lf_tag_pii_key
-  allowed_domains      = ["app_settings", "notifications"]
-  allow_non_pii_tables = true
 }
 
-module "app_layer" {
-  source       = "../../modules/app_layer"
-  bucket_name  = module.core.s3_bucket_name
-  product_name = "app_settings"
-}
-
-module "companion_reader" {
-  source         = "../../modules/companion"
-  bucket_name    = module.core.s3_bucket_name
-  product_name   = "app_settings"
-  database_name  = "app_settings_dp"
-  workgroup_name = module.core.athena_workgroup_name
-}
-
-module "companion_lf_access" {
-  source               = "../../modules/consumer_access"
-  consumer_role_arn    = module.companion_reader.companion_role_arn
+# Grant Companion access to Notifications domain (authorized cross-domain access)
+module "companion_to_notifications" {
+  source               = "../../modules/cross_domain_access"
+  consumer_role_arn    = module.companion.domain_role_arn
+  source_domain        = "notifications"
+  target_domain        = "companion"
+  source_database_name = module.notifications.database_name
+  source_table_name    = module.notifications.table_name
   lf_tag_domain_key    = module.core.lf_tag_domain_key
   lf_tag_pii_key       = module.core.lf_tag_pii_key
-  allowed_domains      = ["app_settings"]
-  allow_non_pii_tables = true
 }
 
-# Grant DATA_LOCATION_ACCESS to Companion on the data lake bucket so Athena can read S3 through LF
-resource "aws_lakeformation_permissions" "companion_location" {
-  principal   = module.companion_reader.companion_role_arn
-  permissions = ["DATA_LOCATION_ACCESS"]
-
-  data_location {
-    arn = module.core.s3_bucket_arn
-  }
-}
+# No S3 data lake - each domain owns their data store

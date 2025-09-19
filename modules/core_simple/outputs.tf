@@ -1,21 +1,6 @@
-output "s3_bucket_name" {
-  description = "Name of the S3 bucket for the data lake"
-  value       = aws_s3_bucket.data_lake.bucket
-}
-
-output "s3_bucket_arn" {
-  description = "ARN of the S3 bucket"
-  value       = aws_s3_bucket.data_lake.arn
-}
-
 output "athena_workgroup_name" {
   description = "Athena workgroup name"
   value       = aws_athena_workgroup.workgroup.name
-}
-
-output "data_owner_role_arn" {
-  description = "ARN of the data owner IAM role"
-  value       = aws_iam_role.data_owner.arn
 }
 
 output "data_consumer_role_arn" {
@@ -37,5 +22,3 @@ output "lf_tag_pii_key" {
   description = "Lake Formation pii LF-tag key"
   value       = aws_lakeformation_lf_tag.pii.key
 }
-
-

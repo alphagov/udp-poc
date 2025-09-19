@@ -4,71 +4,13 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
   }
 }
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-resource "random_string" "bucket_suffix" {
-  length  = 6
-  special = false
-  upper   = false
-}
-
-resource "aws_s3_bucket" "data_lake" {
-  bucket = "${var.bucket_name_prefix}-${random_string.bucket_suffix.result}"
-}
-
-resource "aws_s3_bucket_versioning" "data_lake" {
-  bucket = aws_s3_bucket.data_lake.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "data_lake" {
-  bucket = aws_s3_bucket.data_lake.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-# Allow Lake Formation service-linked role to access the bucket for governed reads
-data "aws_iam_policy_document" "data_lake_bucket" {
-  statement {
-    sid       = "LFListBucket"
-    actions   = ["s3:ListBucket"]
-    resources = [aws_s3_bucket.data_lake.arn]
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess"]
-    }
-  }
-
-  statement {
-    sid       = "LFReadObjects"
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.data_lake.arn}/*"]
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess"]
-    }
-  }
-}
-
-resource "aws_s3_bucket_policy" "data_lake" {
-  bucket = aws_s3_bucket.data_lake.id
-  policy = data.aws_iam_policy_document.data_lake_bucket.json
-}
-
-# Lake Formation
+# Lake Formation setup for cross-domain governance
 data "aws_iam_session_context" "current" {
   arn = data.aws_caller_identity.current.arn
 }
@@ -77,14 +19,9 @@ resource "aws_lakeformation_data_lake_settings" "main" {
   admins = [data.aws_iam_session_context.current.issuer_arn]
 }
 
-# Register S3 bucket as a Lake Formation data location
-resource "aws_lakeformation_resource" "data_lake_s3" {
-  arn = aws_s3_bucket.data_lake.arn
-}
-
 resource "aws_lakeformation_lf_tag" "domain" {
   key    = "domain"
-  values = ["app_settings", "notifications"]
+  values = ["app_settings", "notifications", "companion"]
 }
 
 resource "aws_lakeformation_lf_tag" "pii" {
@@ -92,7 +29,7 @@ resource "aws_lakeformation_lf_tag" "pii" {
   values = ["true", "false"]
 }
 
-# IAM roles
+# IAM roles for cross-domain access
 data "aws_iam_policy_document" "assume_role_account" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -103,16 +40,12 @@ data "aws_iam_policy_document" "assume_role_account" {
   }
 }
 
-resource "aws_iam_role" "data_owner" {
-  name               = "udp-data-owner"
-  assume_role_policy = data.aws_iam_policy_document.assume_role_account.json
-}
-
 resource "aws_iam_role" "data_consumer" {
   name               = "udp-data-consumer"
   assume_role_policy = data.aws_iam_policy_document.assume_role_account.json
 }
 
+# Glue crawler role for domain operations
 data "aws_iam_policy_document" "glue_crawler_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -129,15 +62,6 @@ resource "aws_iam_role" "glue_crawler" {
 }
 
 data "aws_iam_policy_document" "glue_crawler_policy" {
-  statement {
-    sid     = "S3Access"
-    actions = ["s3:ListBucket", "s3:GetObject", "s3:PutObject"]
-    resources = [
-      aws_s3_bucket.data_lake.arn,
-      "${aws_s3_bucket.data_lake.arn}/*"
-    ]
-  }
-
   statement {
     sid = "GlueCatalog"
     actions = [
@@ -185,7 +109,7 @@ resource "aws_iam_role_policy_attachment" "glue_service_managed_attach" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
-# Athena
+# Athena workgroup for cross-domain queries
 resource "aws_athena_workgroup" "workgroup" {
   name = var.athena_workgroup_name
 
@@ -193,18 +117,8 @@ resource "aws_athena_workgroup" "workgroup" {
     enforce_workgroup_configuration    = true
     publish_cloudwatch_metrics_enabled = true
     result_configuration {
-      output_location = "s3://${aws_s3_bucket.data_lake.bucket}/athena-results/"
+      output_location = "s3://aws-athena-query-results-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}/"
       encryption_configuration { encryption_option = "SSE_S3" }
     }
   }
 }
-
-# Ensure results prefix exists
-resource "aws_s3_object" "athena_results_prefix" {
-  bucket       = aws_s3_bucket.data_lake.id
-  key          = "athena-results/"
-  content      = ""
-  content_type = "application/x-directory"
-}
-
-

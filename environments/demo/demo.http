@@ -1,0 +1,124 @@
+@app_settings_host = https://bp1az7qcgi.execute-api.eu-west-2.amazonaws.com
+@companion_host = https://vyiafhsn42.execute-api.eu-west-2.amazonaws.com
+@notifications_host = https://jg1k15nfd6.execute-api.eu-west-2.amazonaws.com
+
+# ===========================================
+# STEP 1: Create test data in each domain
+# ===========================================
+
+### App Settings - Create theme setting
+PUT {{app_settings_host}}/user123/theme
+Content-Type: application/json
+
+{
+  "value": "dark"
+}
+
+### App Settings - Create language setting
+PUT {{app_settings_host}}/user123/language
+Content-Type: application/json
+
+{
+  "value": "en"
+}
+
+### App Settings - Create notification preference
+PUT {{app_settings_host}}/user123/notifications
+Content-Type: application/json
+
+{
+  "value": "email_only"
+}
+
+### Notifications - Create email notification setting
+PUT {{notifications_host}}/user123/email_notifications
+Content-Type: application/json
+
+{
+  "value": "true"
+}
+
+### Notifications - Create push notification setting
+PUT {{notifications_host}}/user123/push_notifications
+Content-Type: application/json
+
+{
+  "value": "false"
+}
+
+### Notifications - Create SMS notification setting
+PUT {{notifications_host}}/user123/sms_notifications
+Content-Type: application/json
+
+{
+  "value": "true"
+}
+
+### Companion - Create analytics preference
+PUT {{companion_host}}/user123/analytics_enabled
+Content-Type: application/json
+
+{
+  "value": "true"
+}
+
+### Companion - Create data sharing preference
+PUT {{companion_host}}/user123/data_sharing
+Content-Type: application/json
+
+{
+  "value": "limited"
+}
+
+# ===========================================
+# STEP 2: Test direct domain access (should work)
+# ===========================================
+
+### App Settings - Get all settings for user123
+GET {{app_settings_host}}/user123
+
+### App Settings - Get specific theme setting
+GET {{app_settings_host}}/user123/theme
+
+### Notifications - Get all settings for user123
+GET {{notifications_host}}/user123
+
+### Notifications - Get specific email setting
+GET {{notifications_host}}/user123/email_notifications
+
+### Companion - Get all settings for user123
+GET {{companion_host}}/user123
+
+### Companion - Get specific analytics setting
+GET {{companion_host}}/user123/analytics_enabled
+
+# ===========================================
+# STEP 3: Test cross-domain access (Lake Formation controlled)
+# ===========================================
+# Note: These would require implementing cross-domain queries in the Companion Lambda
+# For now, we'll test the individual domain APIs and then use Athena console
+
+### Test with different user IDs to see data isolation
+GET {{app_settings_host}}/user456
+###
+GET {{notifications_host}}/user456
+###
+GET {{companion_host}}/user456
+
+# ===========================================
+# STEP 4: Test error cases
+# ===========================================
+
+### Test invalid user ID
+GET {{app_settings_host}}/
+
+### Test invalid setting key
+GET {{app_settings_host}}/user123/nonexistent
+
+### Test PUT without value
+PUT {{app_settings_host}}/user123/test_setting
+Content-Type: application/json
+
+{
+  "invalid": "missing_value_field"
+}

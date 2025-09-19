@@ -1,42 +1,34 @@
-output "s3_bucket_name" {
-  value       = module.core.s3_bucket_name
-  description = "Core data lake bucket"
-}
-
 output "athena_workgroup_name" {
   value       = module.core.athena_workgroup_name
-  description = "Athena workgroup"
-}
-
-output "app_settings" {
-  value = {
-    database = module.app_settings.database_name
-    prefix   = module.app_settings.s3_prefix
-    crawler  = module.app_settings.crawler_name
-  }
-  description = "App settings data product"
-}
-
-output "notifications" {
-  value = {
-    database = module.notifications.database_name
-    prefix   = module.notifications.s3_prefix
-    crawler  = module.notifications.crawler_name
-  }
-  description = "Notifications data product"
+  description = "Athena workgroup for cross-domain queries"
 }
 
 output "app_settings_api_url" {
-  description = "Base URL for the App Settings API"
-  value       = module.app_layer.http_api_endpoint
+  description = "App Settings domain API URL"
+  value       = module.app_settings.api_endpoint
 }
 
 output "app_settings_table_name" {
-  description = "DynamoDB table name storing app settings"
-  value       = module.app_layer.dynamodb_table_name
+  description = "App Settings DynamoDB table name"
+  value       = module.app_settings.dynamodb_table_name
+}
+
+output "notifications_api_url" {
+  description = "Notifications domain API URL"
+  value       = module.notifications.api_endpoint
+}
+
+output "notifications_table_name" {
+  description = "Notifications DynamoDB table name"
+  value       = module.notifications.dynamodb_table_name
 }
 
 output "companion_api_url" {
-  description = "Companion reader API URL"
-  value       = module.companion_reader.companion_api_url
+  description = "Companion domain API URL"
+  value       = module.companion.api_endpoint
+}
+
+output "companion_table_name" {
+  description = "Companion DynamoDB table name"
+  value       = module.companion.dynamodb_table_name
 }
