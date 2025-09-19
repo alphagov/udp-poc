@@ -1,22 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-
-provider "aws" {
-  region = "eu-west-2"
-  default_tags {
-    tags = {
-      POC = "UDP"
-    }
-  }
-}
-
 module "core" {
   source                = "../../modules/core_simple"
   athena_workgroup_name = "udp-demo-workgroup"
@@ -37,15 +18,6 @@ module "notifications" {
   lf_tag_pii_key        = module.core.lf_tag_pii_key
   glue_crawler_role_arn = module.core.glue_crawler_role_arn
 }
-
-# module "companion" {
-#   source               = "../../modules/consumer_access"
-#   consumer_role_arn    = module.core.data_consumer_role_arn
-#   lf_tag_domain_key    = module.core.lf_tag_domain_key
-#   lf_tag_pii_key       = module.core.lf_tag_pii_key
-#   allowed_domains      = ["app_settings", "notifications"]
-#   allow_non_pii_tables = true
-# }
 
 module "companion" {
   source                = "../../modules/domain"
